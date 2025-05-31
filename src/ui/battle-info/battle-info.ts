@@ -256,7 +256,7 @@ export default abstract class BattleInfo extends Phaser.GameObjects.Container {
       .setName("container_level");
     this.add(this.levelContainer);
 
-    const levelOverlay = globalScene.add.image(0, 0, "overlay_lv");
+    const levelOverlay = globalScene.add.image(1.33, 0, "overlay_lv").setScale(0.83);
     this.levelContainer.add(levelOverlay);
 
     this.hpBar = globalScene.add.image(posParams.hpBarX, posParams.hpBarY, "overlay_hp").setName("hp_bar").setOrigin(0);
@@ -665,7 +665,7 @@ export default abstract class BattleInfo extends Phaser.GameObjects.Container {
     this.levelNumbersContainer.removeAll(true);
     const levelStr = level.toString();
     for (let i = 0; i < levelStr.length; i++) {
-      this.levelNumbersContainer.add(globalScene.add.image(i * 8, 0, textureKey, levelStr[i]));
+      this.levelNumbersContainer.add(globalScene.add.image(i * 6, 0, textureKey, levelStr[i]).setScale(0.825));
     }
     this.levelContainer.setX(this.baseLvContainerX - 8 * Math.max(levelStr.length - 3, 0));
   }

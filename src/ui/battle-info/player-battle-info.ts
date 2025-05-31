@@ -39,7 +39,7 @@ export class PlayerBattleInfo extends BattleInfo {
         statOverflow: 1,
       },
     };
-    super(Math.floor(globalScene.game.canvas.width / 6) - 10, -72, true, posParams);
+    super(Math.floor(globalScene.game.canvas.width / 6) - 1, -67, true, posParams);
 
     this.hpNumbersContainer = globalScene.add.container(-15, 10).setName("container_hp");
 
@@ -222,11 +222,11 @@ export class PlayerBattleInfo extends BattleInfo {
     const maxHpStr = maxHp.toString();
     let offset = 0;
     for (let i = maxHpStr.length - 1; i >= 0; i--) {
-      this.hpNumbersContainer.add(globalScene.add.image(offset++ * -8, 0, "numbers", maxHpStr[i]));
+      this.hpNumbersContainer.add(globalScene.add.image(offset++ * -6, 0, "numbers", maxHpStr[i]).setScale(0.83));
     }
-    this.hpNumbersContainer.add(globalScene.add.image(offset++ * -8, 0, "numbers", "/"));
+    this.hpNumbersContainer.add(globalScene.add.image(offset++ * -6, 0, "numbers", "/").setScale(0.83));
     for (let i = hpStr.length - 1; i >= 0; i--) {
-      this.hpNumbersContainer.add(globalScene.add.image(offset++ * -8, 0, "numbers", hpStr[i]));
+      this.hpNumbersContainer.add(globalScene.add.image(offset++ * -6, 0, "numbers", hpStr[i]).setScale(0.83));
     }
   }
 
