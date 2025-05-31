@@ -1,7 +1,7 @@
 import { Abilities } from "#enums/abilities";
 import { BattlerIndex } from "#app/battle";
 import { Stat } from "#enums/stat";
-import { allMoves } from "#app/data/moves/move";
+import { allMoves } from "#app/data/data-lists";
 import { Moves } from "#enums/moves";
 import { Species } from "#enums/species";
 import { TurnEndPhase } from "#app/phases/turn-end-phase";
@@ -71,7 +71,7 @@ describe("Moves - Spectral Thief", () => {
     const player = game.scene.getPlayerPokemon()!;
     const enemy = game.scene.getEnemyPokemon()!;
     const moveToCheck = allMoves[Moves.SPECTRAL_THIEF];
-    const dmgBefore = enemy.getAttackDamage(player, moveToCheck, false, false, false, false).damage;
+    const dmgBefore = enemy.getAttackDamage({ source: player, move: moveToCheck }).damage;
 
     enemy.setStatStage(Stat.ATK, 6);
 
@@ -80,7 +80,7 @@ describe("Moves - Spectral Thief", () => {
     game.move.select(Moves.SPECTRAL_THIEF);
     await game.phaseInterceptor.to(TurnEndPhase);
 
-    expect(dmgBefore).toBeLessThan(enemy.getAttackDamage(player, moveToCheck, false, false, false, false).damage);
+    expect(dmgBefore).toBeLessThan(enemy.getAttackDamage({ source: player, move: moveToCheck }).damage);
   });
 
   it("should steal stat stages as a negative value with Contrary.", async () => {

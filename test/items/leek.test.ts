@@ -28,12 +28,11 @@ describe("Items - Leek", () => {
       .enemyMoveset([Moves.SPLASH, Moves.SPLASH, Moves.SPLASH, Moves.SPLASH])
       .startingHeldItems([{ name: "LEEK" }])
       .moveset([Moves.TACKLE])
-      .disableCrits()
       .battleStyle("single");
   });
 
   it("should raise CRIT stage by 2 when held by FARFETCHD", async () => {
-    await game.startBattle([Species.FARFETCHD]);
+    await game.classicMode.startBattle([Species.FARFETCHD]);
 
     const enemyMember = game.scene.getEnemyPokemon()!;
 
@@ -47,7 +46,7 @@ describe("Items - Leek", () => {
   }, 20000);
 
   it("should raise CRIT stage by 2 when held by GALAR_FARFETCHD", async () => {
-    await game.startBattle([Species.GALAR_FARFETCHD]);
+    await game.classicMode.startBattle([Species.GALAR_FARFETCHD]);
 
     const enemyMember = game.scene.getEnemyPokemon()!;
 
@@ -61,7 +60,7 @@ describe("Items - Leek", () => {
   }, 20000);
 
   it("should raise CRIT stage by 2 when held by SIRFETCHD", async () => {
-    await game.startBattle([Species.SIRFETCHD]);
+    await game.classicMode.startBattle([Species.SIRFETCHD]);
 
     const enemyMember = game.scene.getEnemyPokemon()!;
 
@@ -78,7 +77,7 @@ describe("Items - Leek", () => {
     // Randomly choose from the Farfetch'd line
     const species = [Species.FARFETCHD, Species.GALAR_FARFETCHD, Species.SIRFETCHD];
 
-    await game.startBattle([species[randInt(species.length)], Species.PIKACHU]);
+    await game.classicMode.startBattle([species[randInt(species.length)], Species.PIKACHU]);
 
     const [partyMember, ally] = game.scene.getPlayerParty();
 
@@ -106,7 +105,7 @@ describe("Items - Leek", () => {
     // Randomly choose from the Farfetch'd line
     const species = [Species.FARFETCHD, Species.GALAR_FARFETCHD, Species.SIRFETCHD];
 
-    await game.startBattle([Species.PIKACHU, species[randInt(species.length)]]);
+    await game.classicMode.startBattle([Species.PIKACHU, species[randInt(species.length)]]);
 
     const [partyMember, ally] = game.scene.getPlayerParty();
 
@@ -131,7 +130,7 @@ describe("Items - Leek", () => {
   }, 20000);
 
   it("should not raise CRIT stage when held by a Pokemon outside of FARFETCHD line", async () => {
-    await game.startBattle([Species.PIKACHU]);
+    await game.classicMode.startBattle([Species.PIKACHU]);
 
     const enemyMember = game.scene.getEnemyPokemon()!;
 

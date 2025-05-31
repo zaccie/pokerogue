@@ -50,8 +50,8 @@ describe("Abilities - Desolate Land", () => {
     game.move.select(Moves.SPLASH, 0, 2);
     game.move.select(Moves.SPLASH, 1, 2);
 
-    await game.forceEnemyMove(Moves.ROAR, 0);
-    await game.forceEnemyMove(Moves.SPLASH, 1);
+    await game.move.selectEnemyMove(Moves.ROAR, 0);
+    await game.move.selectEnemyMove(Moves.SPLASH, 1);
 
     await game.phaseInterceptor.to("TurnEndPhase");
 
@@ -66,8 +66,8 @@ describe("Abilities - Desolate Land", () => {
     game.move.select(Moves.SPLASH, 0, 2);
     game.move.select(Moves.SPLASH, 1, 2);
 
-    await game.forceEnemyMove(Moves.ROAR, 1);
-    await game.forceEnemyMove(Moves.SPLASH, 0);
+    await game.move.selectEnemyMove(Moves.ROAR, 1);
+    await game.move.selectEnemyMove(Moves.SPLASH, 0);
 
     await game.phaseInterceptor.to("TurnEndPhase");
 
@@ -103,8 +103,8 @@ describe("Abilities - Desolate Land", () => {
 
     game.move.select(Moves.SPLASH, 0, 2);
     game.move.select(Moves.SPLASH, 1, 2);
-    await game.forceEnemyMove(Moves.MEMENTO, 0);
-    await game.forceEnemyMove(Moves.MEMENTO, 1);
+    await game.move.selectEnemyMove(Moves.MEMENTO, 0);
+    await game.move.selectEnemyMove(Moves.MEMENTO, 1);
 
     await game.phaseInterceptor.to("TurnEndPhase");
 
@@ -139,7 +139,7 @@ describe("Abilities - Desolate Land", () => {
     await game.classicMode.startBattle([Species.MAGIKARP]);
     expect(game.scene.arena.weather?.weatherType).toBe(WeatherType.HARSH_SUN);
 
-    vi.spyOn(game.scene.getPlayerPokemon()!, "randSeedInt").mockReturnValue(0);
+    vi.spyOn(game.scene.getPlayerPokemon()!, "randBattleSeedInt").mockReturnValue(0);
 
     const commandPhase = game.scene.getCurrentPhase() as CommandPhase;
     commandPhase.handleCommand(Command.RUN, 0);

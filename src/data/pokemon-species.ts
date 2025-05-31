@@ -27,12 +27,13 @@ import {
 } from "#app/data/balance/pokemon-level-moves";
 import type { Stat } from "#enums/stat";
 import type { Variant, VariantSet } from "#app/sprites/variant";
-import { populateVariantColorCache, variantData } from "#app/sprites/variant";
+import { populateVariantColorCache, variantColorCache, variantData } from "#app/sprites/variant";
 import { speciesStarterCosts, POKERUS_STARTER_COUNT } from "#app/data/balance/starters";
 import { SpeciesFormKey } from "#enums/species-form-key";
 import { starterPassiveAbilities } from "#app/data/balance/passives";
 import { loadPokemonVariantAssets } from "#app/sprites/pokemon-sprite";
 import { hasExpSprite } from "#app/sprites/sprite-utils";
+import { Gender } from "./gender";
 
 export enum Region {
   NORMAL,
@@ -404,7 +405,7 @@ export abstract class PokemonSpeciesForm {
   }
 
   /** Compute the sprite ID of the pokemon form. */
-  getSpriteId(female: boolean, formIndex?: number, shiny?: boolean, variant = 0, back?: boolean): string {
+  getSpriteId(female: boolean, formIndex?: number, shiny?: boolean, variant = 0, back = false): string {
     const baseSpriteKey = this.getBaseSpriteKey(female, formIndex);
 
     let config = variantData;
@@ -485,6 +486,7 @@ export abstract class PokemonSpeciesForm {
           break;
         case Species.ZACIAN:
         case Species.ZAMAZENTA:
+          // biome-ignore lint/suspicious/noFallthroughSwitchClause: Falls through
           if (formSpriteKey.startsWith("behemoth")) {
             formSpriteKey = "crowned";
           }
@@ -594,6 +596,44 @@ export abstract class PokemonSpeciesForm {
     return true;
   }
 
+  /**
+   * Load the variant colors for the species into the variant color cache
+   *
+   * @param spriteKey - The sprite key to use
+   * @param female - Whether to load female instead of male
+   * @param back - Whether the back sprite is being loaded
+   *
+   */
+  async loadVariantColors(
+    spriteKey: string,
+    female: boolean,
+    variant: Variant,
+    back = false,
+    formIndex?: number,
+  ): Promise<void> {
+    let baseSpriteKey = this.getBaseSpriteKey(female, formIndex);
+    if (back) {
+      baseSpriteKey = "back__" + baseSpriteKey;
+    }
+
+    if (variantColorCache.hasOwnProperty(baseSpriteKey)) {
+      // Variant colors have already been loaded
+      return;
+    }
+
+    const variantInfo = variantData[this.getVariantDataIndex(formIndex)];
+    // Do nothing if there is no variant information or the variant does not have color replacements
+    if (!variantInfo || variantInfo[variant] !== 1) {
+      return;
+    }
+
+    await populateVariantColorCache(
+      "pkmn__" + baseSpriteKey,
+      globalScene.experimentalSprites && hasExpSprite(spriteKey),
+      baseSpriteKey.replace("__", "/"),
+    );
+  }
+
   async loadAssets(
     female: boolean,
     formIndex?: number,
@@ -606,15 +646,9 @@ export abstract class PokemonSpeciesForm {
     const spriteKey = this.getSpriteKey(female, formIndex, shiny, variant, back);
     globalScene.loadPokemonAtlas(spriteKey, this.getSpriteAtlasPath(female, formIndex, shiny, variant, back));
     globalScene.load.audio(this.getCryKey(formIndex), `audio/${this.getCryKey(formIndex)}.m4a`);
-
-    const baseSpriteKey = this.getBaseSpriteKey(female, formIndex);
-
-    // Force the variant color cache to be loaded for the form
-    await populateVariantColorCache(
-      "pkmn__" + baseSpriteKey,
-      globalScene.experimentalSprites && hasExpSprite(spriteKey),
-      baseSpriteKey,
-    );
+    if (!isNullOrUndefined(variant)) {
+      await this.loadVariantColors(spriteKey, female, variant, back, formIndex);
+    }
     return new Promise<void>(resolve => {
       globalScene.load.once(Phaser.Loader.Events.COMPLETE, () => {
         const originalWarn = console.warn;
@@ -716,7 +750,7 @@ export abstract class PokemonSpeciesForm {
     let paletteColors: Map<number, number> = new Map();
 
     const originalRandom = Math.random;
-    Math.random = () => Phaser.Math.RND.realInRange(0, 1);
+    Math.random = Phaser.Math.RND.frac;
 
     globalScene.executeWithSeedOffset(
       () => {
@@ -844,6 +878,21 @@ export default class PokemonSpecies extends PokemonSpeciesForm implements Locali
       }
     }
     return this.name;
+  }
+
+  /**
+   * Pick and return a random {@linkcode Gender} for a {@linkcode Pokemon}.
+   * @returns A randomly rolled gender based on this Species' {@linkcode malePercent}.
+   */
+  generateGender(): Gender {
+    if (isNullOrUndefined(this.malePercent)) {
+      return Gender.GENDERLESS;
+    }
+
+    if (Phaser.Math.RND.realInRange(0, 1) <= this.malePercent) {
+      return Gender.MALE;
+    }
+    return Gender.FEMALE;
   }
 
   /**
@@ -1648,8 +1697,8 @@ export function initSpecies() {
     new PokemonSpecies(Species.CHINCHOU, 2, false, false, false, "Angler Pokémon", PokemonType.WATER, PokemonType.ELECTRIC, 0.5, 12, Abilities.VOLT_ABSORB, Abilities.ILLUMINATE, Abilities.WATER_ABSORB, 330, 75, 38, 38, 56, 56, 67, 190, 50, 66, GrowthRate.SLOW, 50, false),
     new PokemonSpecies(Species.LANTURN, 2, false, false, false, "Light Pokémon", PokemonType.WATER, PokemonType.ELECTRIC, 1.2, 22.5, Abilities.VOLT_ABSORB, Abilities.ILLUMINATE, Abilities.WATER_ABSORB, 460, 125, 58, 58, 76, 76, 67, 75, 50, 161, GrowthRate.SLOW, 50, false),
     new PokemonSpecies(Species.PICHU, 2, false, false, false, "Tiny Mouse Pokémon", PokemonType.ELECTRIC, null, 0.3, 2, Abilities.STATIC, Abilities.NONE, Abilities.LIGHTNING_ROD, 205, 20, 40, 15, 35, 35, 60, 190, 70, 41, GrowthRate.MEDIUM_FAST, 50, false, false,
-      new PokemonForm("Normal", "", PokemonType.ELECTRIC, null, 1.4, 61.5, Abilities.STATIC, Abilities.NONE, Abilities.LIGHTNING_ROD, 205, 20, 40, 15, 35, 35, 60, 190, 70, 41, false, null, true),
-      new PokemonForm("Spiky-Eared", "spiky", PokemonType.ELECTRIC, null, 1.4, 61.5, Abilities.STATIC, Abilities.NONE, Abilities.LIGHTNING_ROD, 205, 20, 40, 15, 35, 35, 60, 190, 70, 41, false, null, true),
+      new PokemonForm("Normal", "", PokemonType.ELECTRIC, null, 1.4, 2, Abilities.STATIC, Abilities.NONE, Abilities.LIGHTNING_ROD, 205, 20, 40, 15, 35, 35, 60, 190, 70, 41, false, null, true),
+      new PokemonForm("Spiky-Eared", "spiky", PokemonType.ELECTRIC, null, 1.4, 2, Abilities.STATIC, Abilities.NONE, Abilities.LIGHTNING_ROD, 205, 20, 40, 15, 35, 35, 60, 190, 70, 41, false, null, true),
     ),
     new PokemonSpecies(Species.CLEFFA, 2, false, false, false, "Star Shape Pokémon", PokemonType.FAIRY, null, 0.3, 3, Abilities.CUTE_CHARM, Abilities.MAGIC_GUARD, Abilities.FRIEND_GUARD, 218, 50, 25, 28, 45, 55, 15, 150, 140, 44, GrowthRate.FAST, 25, false),
     new PokemonSpecies(Species.IGGLYBUFF, 2, false, false, false, "Balloon Pokémon", PokemonType.NORMAL, PokemonType.FAIRY, 0.3, 1, Abilities.CUTE_CHARM, Abilities.COMPETITIVE, Abilities.FRIEND_GUARD, 210, 90, 30, 15, 40, 20, 15, 170, 50, 42, GrowthRate.FAST, 25, false),
@@ -3072,7 +3121,7 @@ export function initSpecies() {
     ),
     new PokemonSpecies(Species.WALKING_WAKE, 9, false, false, false, "Paradox Pokémon", PokemonType.WATER, PokemonType.DRAGON, 3.5, 280, Abilities.PROTOSYNTHESIS, Abilities.NONE, Abilities.NONE, 590, 99, 83, 91, 125, 83, 109, 10, 0, 295, GrowthRate.SLOW, null, false), //Custom Catchrate, matching Gouging Fire and Raging Bolt
     new PokemonSpecies(Species.IRON_LEAVES, 9, false, false, false, "Paradox Pokémon", PokemonType.GRASS, PokemonType.PSYCHIC, 1.5, 125, Abilities.QUARK_DRIVE, Abilities.NONE, Abilities.NONE, 590, 90, 130, 88, 70, 108, 104, 10, 0, 295, GrowthRate.SLOW, null, false), //Custom Catchrate, matching Iron Boulder and Iron Crown
-    new PokemonSpecies(Species.DIPPLIN, 9, false, false, false, "Candy Apple Pokémon", PokemonType.GRASS, PokemonType.DRAGON, 0.4, 9.7, Abilities.SUPERSWEET_SYRUP, Abilities.GLUTTONY, Abilities.STICKY_HOLD, 485, 80, 80, 110, 95, 80, 40, 45, 50, 170, GrowthRate.ERRATIC, 50, false),
+    new PokemonSpecies(Species.DIPPLIN, 9, false, false, false, "Candy Apple Pokémon", PokemonType.GRASS, PokemonType.DRAGON, 0.4, 4.4, Abilities.SUPERSWEET_SYRUP, Abilities.GLUTTONY, Abilities.STICKY_HOLD, 485, 80, 80, 110, 95, 80, 40, 45, 50, 170, GrowthRate.ERRATIC, 50, false),
     new PokemonSpecies(Species.POLTCHAGEIST, 9, false, false, false, "Matcha Pokémon", PokemonType.GRASS, PokemonType.GHOST, 0.1, 1.1, Abilities.HOSPITALITY, Abilities.NONE, Abilities.HEATPROOF, 308, 40, 45, 45, 74, 54, 50, 120, 50, 62, GrowthRate.SLOW, null, false, false,
       new PokemonForm("Counterfeit Form", "counterfeit", PokemonType.GRASS, PokemonType.GHOST, 0.1, 1.1, Abilities.HOSPITALITY, Abilities.NONE, Abilities.HEATPROOF, 308, 40, 45, 45, 74, 54, 50, 120, 50, 62, false, null, true),
       new PokemonForm("Artisan Form", "artisan", PokemonType.GRASS, PokemonType.GHOST, 0.1, 1.1, Abilities.HOSPITALITY, Abilities.NONE, Abilities.HEATPROOF, 308, 40, 45, 45, 74, 54, 50, 120, 50, 62, false, null, false, true),

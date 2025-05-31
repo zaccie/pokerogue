@@ -13,7 +13,7 @@ import { allAbilities } from "#app/data/data-lists";
 import { speciesEggMoves } from "#app/data/balance/egg-moves";
 import { GrowthRate, getGrowthRateColor } from "#app/data/exp";
 import { Gender, getGenderColor, getGenderSymbol } from "#app/data/gender";
-import { allMoves } from "#app/data/moves/move";
+import { allMoves } from "#app/data/data-lists";
 import { getNatureName } from "#app/data/nature";
 import { pokemonFormChanges } from "#app/data/pokemon-forms";
 import type { LevelMoves } from "#app/data/balance/pokemon-level-moves";
@@ -53,7 +53,8 @@ import { Button } from "#enums/buttons";
 import { EggSourceType } from "#enums/egg-source-types";
 import { DropDown, DropDownLabel, DropDownOption, DropDownState, DropDownType, SortCriteria } from "#app/ui/dropdown";
 import { StarterContainer } from "#app/ui/starter-container";
-import { DropDownColumn, FilterBar } from "#app/ui/filter-bar";
+import { FilterBar } from "#app/ui/filter-bar";
+import { DropDownColumn } from "#enums/drop-down-column";
 import { ScrollBar } from "#app/ui/scroll-bar";
 import { SelectChallengePhase } from "#app/phases/select-challenge-phase";
 import { EncounterPhase } from "#app/phases/encounter-phase";
@@ -108,17 +109,21 @@ const languageSettings: { [key: string]: LanguageSetting } = {
     instructionTextSize: "38px",
   },
   de: {
-    starterInfoTextSize: "48px",
+    starterInfoTextSize: "54px",
     instructionTextSize: "35px",
-    starterInfoXPos: 33,
+    starterInfoXPos: 35,
   },
   "es-ES": {
-    starterInfoTextSize: "52px",
-    instructionTextSize: "35px",
+    starterInfoTextSize: "50px",
+    instructionTextSize: "38px",
+    starterInfoYOffset: 0.5,
+    starterInfoXPos: 38,
   },
   "es-MX": {
-    starterInfoTextSize: "52px",
-    instructionTextSize: "35px",
+    starterInfoTextSize: "50px",
+    instructionTextSize: "38px",
+    starterInfoYOffset: 0.5,
+    starterInfoXPos: 38,
   },
   fr: {
     starterInfoTextSize: "54px",
@@ -128,33 +133,52 @@ const languageSettings: { [key: string]: LanguageSetting } = {
     starterInfoTextSize: "56px",
     instructionTextSize: "38px",
   },
-  pt_BR: {
-    starterInfoTextSize: "47px",
-    instructionTextSize: "38px",
+  "pt-BR": {
+    starterInfoTextSize: "48px",
+    instructionTextSize: "42px",
+    starterInfoYOffset: 0.5,
     starterInfoXPos: 33,
   },
   zh: {
-    starterInfoTextSize: "47px",
-    instructionTextSize: "38px",
-    starterInfoYOffset: 1,
-    starterInfoXPos: 24,
-  },
-  pt: {
-    starterInfoTextSize: "48px",
-    instructionTextSize: "42px",
-    starterInfoXPos: 33,
+    starterInfoTextSize: "56px",
+    instructionTextSize: "36px",
+    starterInfoXPos: 26,
   },
   ko: {
-    starterInfoTextSize: "52px",
+    starterInfoTextSize: "60px",
     instructionTextSize: "38px",
+    starterInfoYOffset: -0.5,
+    starterInfoXPos: 30,
   },
   ja: {
-    starterInfoTextSize: "51px",
+    starterInfoTextSize: "62px",
+    instructionTextSize: "38px",
+    starterInfoYOffset: 0.5,
+    starterInfoXPos: 33,
+  },
+  ca: {
+    starterInfoTextSize: "48px",
+    instructionTextSize: "38px",
+    starterInfoYOffset: 0.5,
+    starterInfoXPos: 29,
+  },
+  da:{
+    starterInfoTextSize: "56px",
     instructionTextSize: "38px",
   },
-  "ca-ES": {
-    starterInfoTextSize: "52px",
+  tr:{
+    starterInfoTextSize: "56px",
     instructionTextSize: "38px",
+  },
+  ro:{
+    starterInfoTextSize: "56px",
+    instructionTextSize: "38px",
+  },
+  ru: {
+    starterInfoTextSize: "46px",
+    instructionTextSize: "38px",
+    starterInfoYOffset: 0.5,
+    starterInfoXPos: 26,
   },
 };
 
@@ -596,6 +620,13 @@ export default class StarterSelectUiHandler extends MessageUiHandler {
     this.iconAnimHandler = new PokemonIconAnimHandler();
     this.iconAnimHandler.setup();
 
+    this.pokemonSprite = globalScene.add.sprite(53, 63, "pkmn__sub");
+    this.pokemonSprite.setPipeline(globalScene.spritePipeline, {
+      tone: [0.0, 0.0, 0.0, 0.0],
+      ignoreTimeTint: true,
+    });
+    this.starterSelectContainer.add(this.pokemonSprite);
+
     this.pokemonNumberText = addTextObject(17, 1, "0000", TextStyle.SUMMARY);
     this.pokemonNumberText.setOrigin(0, 0);
     this.starterSelectContainer.add(this.pokemonNumberText);
@@ -824,13 +855,6 @@ export default class StarterSelectUiHandler extends MessageUiHandler {
       this.iconAnimHandler.addOrUpdate(icon, PokemonIconAnimMode.PASSIVE);
       return icon;
     });
-
-    this.pokemonSprite = globalScene.add.sprite(53, 63, "pkmn__sub");
-    this.pokemonSprite.setPipeline(globalScene.spritePipeline, {
-      tone: [0.0, 0.0, 0.0, 0.0],
-      ignoreTimeTint: true,
-    });
-    this.starterSelectContainer.add(this.pokemonSprite);
 
     this.type1Icon = globalScene.add.sprite(8, 98, getLocalizedSpriteKey("types"));
     this.type1Icon.setScale(0.5);
@@ -1444,6 +1468,7 @@ export default class StarterSelectUiHandler extends MessageUiHandler {
 
     const tweenChain: Phaser.Types.Tweens.TweenChainBuilderConfig = {
       targets: icon,
+      paused: startPaused,
       loop: -1,
       // Make the initial bounce a little randomly delayed
       delay: randIntRange(0, 50) * 5,
@@ -1451,14 +1476,14 @@ export default class StarterSelectUiHandler extends MessageUiHandler {
       tweens: [
         {
           targets: icon,
-          y: 2 - 5,
+          y: "-=5",
           duration: fixedInt(125),
           ease: "Cubic.easeOut",
           yoyo: true,
         },
         {
           targets: icon,
-          y: 2 - 3,
+          y: "-=3",
           duration: fixedInt(150),
           ease: "Cubic.easeOut",
           yoyo: true,
@@ -1466,19 +1491,14 @@ export default class StarterSelectUiHandler extends MessageUiHandler {
       ],
     };
 
-    const isPassiveAvailable = this.isPassiveAvailable(species.speciesId);
-    const isValueReductionAvailable = this.isValueReductionAvailable(species.speciesId);
-    const isSameSpeciesEggAvailable = this.isSameSpeciesEggAvailable(species.speciesId);
-
-    // 'Passives Only' mode
-    if (globalScene.candyUpgradeNotification === 1) {
-      if (isPassiveAvailable) {
-        globalScene.tweens.chain(tweenChain).paused = startPaused;
-      }
-      // 'On' mode
-    } else if (globalScene.candyUpgradeNotification === 2) {
-      if (isPassiveAvailable || isValueReductionAvailable || isSameSpeciesEggAvailable) {
-        globalScene.tweens.chain(tweenChain).paused = startPaused;
+    if (
+      this.isPassiveAvailable(species.speciesId) ||
+      (globalScene.candyUpgradeNotification === 2 &&
+        (this.isValueReductionAvailable(species.speciesId) || this.isSameSpeciesEggAvailable(species.speciesId)))
+    ) {
+      const chain = globalScene.tweens.chain(tweenChain);
+      if (!startPaused) {
+        chain.play();
       }
     }
   }
@@ -2184,7 +2204,7 @@ export default class StarterSelectUiHandler extends MessageUiHandler {
             if (!(passiveAttr & PassiveAttr.UNLOCKED)) {
               const passiveCost = getPassiveCandyCount(speciesStarterCosts[this.lastSpecies.speciesId]);
               options.push({
-                label: `x${passiveCost} ${i18next.t("starterSelectUiHandler:unlockPassive")} (${allAbilities[this.lastSpecies.getPassiveAbility()].name})`,
+                label: `x${passiveCost} ${i18next.t("starterSelectUiHandler:unlockPassive")}`,
                 handler: () => {
                   if (Overrides.FREE_CANDY_UPGRADE_OVERRIDE || candyCount >= passiveCost) {
                     starterData.passiveAttr |= PassiveAttr.UNLOCKED | PassiveAttr.ENABLED;
@@ -3478,7 +3498,7 @@ export default class StarterSelectUiHandler extends MessageUiHandler {
 
       // Resume the animation for the previously selected species
       const icon = this.starterContainers[speciesIndex].icon;
-      globalScene.tweens.getTweensOf(icon).forEach(tween => tween.resume());
+      globalScene.tweens.getTweensOf(icon).forEach(tween => tween.play());
     }
 
     this.lastSpecies = species!; // TODO: is this bang correct?

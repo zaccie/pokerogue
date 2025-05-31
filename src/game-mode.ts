@@ -7,12 +7,13 @@ import type PokemonSpecies from "./data/pokemon-species";
 import { allSpecies } from "./data/pokemon-species";
 import type { Arena } from "./field/arena";
 import Overrides from "#app/overrides";
-import { randSeedInt, randSeedItem } from "#app/utils/common";
+import { isNullOrUndefined, randSeedInt, randSeedItem } from "#app/utils/common";
 import { Biome } from "#enums/biome";
 import { Species } from "#enums/species";
 import { Challenges } from "./enums/challenges";
 import { globalScene } from "#app/global-scene";
 import { getDailyStartingBiome } from "./data/daily-run";
+import { CLASSIC_MODE_MYSTERY_ENCOUNTER_WAVES, CHALLENGE_MODE_MYSTERY_ENCOUNTER_WAVES } from "./constants";
 
 export enum GameModes {
   CLASSIC,
@@ -35,10 +36,6 @@ interface GameModeConfig {
   isChallenge?: boolean;
   hasMysteryEncounters?: boolean;
 }
-
-// Describes min and max waves for MEs in specific game modes
-export const CLASSIC_MODE_MYSTERY_ENCOUNTER_WAVES: [number, number] = [10, 180];
-export const CHALLENGE_MODE_MYSTERY_ENCOUNTER_WAVES: [number, number] = [10, 180];
 
 export class GameMode implements GameModeConfig {
   public modeId: GameModes;
@@ -127,16 +124,20 @@ export class GameMode implements GameModeConfig {
 
   /**
    * @returns either:
-   * - random biome for Daily mode
    * - override from overrides.ts
+   * - random biome for Daily mode
    * - Town
    */
   getStartingBiome(): Biome {
+    if (!isNullOrUndefined(Overrides.STARTING_BIOME_OVERRIDE)) {
+      return Overrides.STARTING_BIOME_OVERRIDE;
+    }
+
     switch (this.modeId) {
       case GameModes.DAILY:
         return getDailyStartingBiome();
       default:
-        return Overrides.STARTING_BIOME_OVERRIDE || Biome.TOWN;
+        return Biome.TOWN;
     }
   }
 

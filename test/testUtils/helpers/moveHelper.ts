@@ -1,14 +1,14 @@
 import type { BattlerIndex } from "#app/battle";
-import { Button } from "#app/enums/buttons";
+import { getMoveTargets } from "#app/data/moves/move";
 import type Pokemon from "#app/field/pokemon";
 import { PokemonMove } from "#app/field/pokemon";
 import Overrides from "#app/overrides";
 import type { CommandPhase } from "#app/phases/command-phase";
-import { LearnMovePhase } from "#app/phases/learn-move-phase";
+import type { EnemyCommandPhase } from "#app/phases/enemy-command-phase";
 import { MoveEffectPhase } from "#app/phases/move-effect-phase";
 import { Command } from "#app/ui/command-ui-handler";
-import { UiMode } from "#enums/ui-mode";
 import { Moves } from "#enums/moves";
+import { UiMode } from "#enums/ui-mode";
 import { getMovePosition } from "#test/testUtils/gameManagerUtils";
 import { GameManagerHelper } from "#test/testUtils/helpers/gameManagerHelper";
 import { vi } from "vitest";
@@ -18,29 +18,29 @@ import { vi } from "vitest";
  */
 export class MoveHelper extends GameManagerHelper {
   /**
-   * Intercepts {@linkcode MoveEffectPhase} and mocks the
-   * {@linkcode MoveEffectPhase.hitCheck | hitCheck}'s return value to `true`.
-   * Used to force a move to hit.
+   * Intercepts {@linkcode MoveEffectPhase} and mocks the phase's move's
+   * accuracy to -1, guaranteeing a hit.
    */
   public async forceHit(): Promise<void> {
     await this.game.phaseInterceptor.to(MoveEffectPhase, false);
-    vi.spyOn(this.game.scene.getCurrentPhase() as MoveEffectPhase, "hitCheck").mockReturnValue(true);
+    const moveEffectPhase = this.game.scene.getCurrentPhase() as MoveEffectPhase;
+    vi.spyOn(moveEffectPhase.move, "calculateBattleAccuracy").mockReturnValue(-1);
   }
 
   /**
-   * Intercepts {@linkcode MoveEffectPhase} and mocks the
-   * {@linkcode MoveEffectPhase.hitCheck | hitCheck}'s return value to `false`.
-   * Used to force a move to miss.
+   * Intercepts {@linkcode MoveEffectPhase} and mocks the phase's move's accuracy
+   * to 0, guaranteeing a miss.
    * @param firstTargetOnly - Whether the move should force miss on the first target only, in the case of multi-target moves.
    */
   public async forceMiss(firstTargetOnly = false): Promise<void> {
     await this.game.phaseInterceptor.to(MoveEffectPhase, false);
-    const hitCheck = vi.spyOn(this.game.scene.getCurrentPhase() as MoveEffectPhase, "hitCheck");
+    const moveEffectPhase = this.game.scene.getCurrentPhase() as MoveEffectPhase;
+    const accuracy = vi.spyOn(moveEffectPhase.move, "calculateBattleAccuracy");
 
     if (firstTargetOnly) {
-      hitCheck.mockReturnValueOnce(false);
+      accuracy.mockReturnValueOnce(0);
     } else {
-      hitCheck.mockReturnValue(false);
+      accuracy.mockReturnValue(0);
     }
   }
 
@@ -93,6 +93,35 @@ export class MoveHelper extends GameManagerHelper {
   }
 
   /**
+   * Modifies a player pokemon's moveset to contain only the selected move and then
+   * selects it to be used during the next {@linkcode CommandPhase}.
+   *
+   * Warning: Will disable the player moveset override if it is enabled!
+   *
+   * Note: If you need to check for changes in the player's moveset as part of the test, it may be
+   * best to use {@linkcode changeMoveset} and {@linkcode select} instead.
+   * @param moveId - the move to use
+   * @param pkmIndex - the pokemon index. Relevant for double-battles only (defaults to 0)
+   * @param targetIndex - (optional) The {@linkcode BattlerIndex} of the Pokemon to target for single-target moves, or `null` if a manual call to `selectTarget()` is required
+   * @param useTera - If `true`, the Pokemon also chooses to Terastallize. This does not require a Tera Orb. Default: `false`.
+   */
+  public use(moveId: Moves, pkmIndex: 0 | 1 = 0, targetIndex?: BattlerIndex | null, useTera = false): void {
+    if ([Overrides.MOVESET_OVERRIDE].flat().length > 0) {
+      vi.spyOn(Overrides, "MOVESET_OVERRIDE", "get").mockReturnValue([]);
+      console.warn("Warning: `use` overwrites the Pokemon's moveset and disables the player moveset override!");
+    }
+
+    const pokemon = this.game.scene.getPlayerField()[pkmIndex];
+    pokemon.moveset = [new PokemonMove(moveId)];
+
+    if (useTera) {
+      this.selectWithTera(moveId, pkmIndex, targetIndex);
+      return;
+    }
+    this.select(moveId, pkmIndex, targetIndex);
+  }
+
+  /**
    * Forces the Paralysis or Freeze status to activate on the next move by temporarily mocking {@linkcode Overrides.STATUS_ACTIVATION_OVERRIDE},
    * advancing to the next `MovePhase`, and then resetting the override to `null`
    * @param activated - `true` to force the status to activate, `false` to force the status to not activate (will cause Freeze to heal)
@@ -101,6 +130,17 @@ export class MoveHelper extends GameManagerHelper {
     vi.spyOn(Overrides, "STATUS_ACTIVATION_OVERRIDE", "get").mockReturnValue(activated);
     await this.game.phaseInterceptor.to("MovePhase");
     vi.spyOn(Overrides, "STATUS_ACTIVATION_OVERRIDE", "get").mockReturnValue(null);
+  }
+
+  /**
+   * Forces the Confusion status to activate on the next move by temporarily mocking {@linkcode Overrides.CONFUSION_ACTIVATION_OVERRIDE},
+   * advancing to the next `MovePhase`, and then resetting the override to `null`
+   * @param activated - `true` to force the Pokemon to hit themself, `false` to forcibly disable it
+   */
+  public async forceConfusionActivation(activated: boolean): Promise<void> {
+    vi.spyOn(Overrides, "CONFUSION_ACTIVATION_OVERRIDE", "get").mockReturnValue(activated);
+    await this.game.phaseInterceptor.to("MovePhase");
+    vi.spyOn(Overrides, "CONFUSION_ACTIVATION_OVERRIDE", "get").mockReturnValue(null);
   }
 
   /**
@@ -122,37 +162,73 @@ export class MoveHelper extends GameManagerHelper {
   }
 
   /**
-   * Simulates learning a move for a player pokemon.
-   * @param move The {@linkcode Moves} being learnt
-   * @param partyIndex The party position of the {@linkcode PlayerPokemon} learning the move (defaults to 0)
-   * @param moveSlotIndex The INDEX (0-4) of the move slot to replace if existent move slots are full;
-   * defaults to 0 (first slot) and 4 aborts the procedure
-   * @returns a promise that resolves once the move has been successfully learnt
+   * Forces the next enemy selecting a move to use the given move in its moveset
+   * against the given target (if applicable).
+   * @param moveId The {@linkcode MoveId | move} the enemy will use
+   * @param target (Optional) the {@linkcode BattlerIndex | target} which the enemy will use the given move against
    */
-  public async learnMove(move: Moves | number, partyIndex = 0, moveSlotIndex = 0) {
-    return new Promise<void>(async (resolve, reject) => {
-      this.game.scene.pushPhase(new LearnMovePhase(partyIndex, move));
+  public async selectEnemyMove(moveId: Moves, target?: BattlerIndex) {
+    // Wait for the next EnemyCommandPhase to start
+    await this.game.phaseInterceptor.to("EnemyCommandPhase", false);
+    const enemy =
+      this.game.scene.getEnemyField()[(this.game.scene.getCurrentPhase() as EnemyCommandPhase).getFieldIndex()];
+    const legalTargets = getMoveTargets(enemy, moveId);
 
-      // if slots are full, queue up inputs to replace existing moves
-      if (this.game.scene.getPlayerParty()[partyIndex].moveset.filter(m => m).length === 4) {
-        this.game.onNextPrompt("LearnMovePhase", UiMode.CONFIRM, () => {
-          this.game.scene.ui.processInput(Button.ACTION); // "Should a move be forgotten and replaced with XXX?"
-        });
-        this.game.onNextPrompt("LearnMovePhase", UiMode.SUMMARY, () => {
-          for (let x = 0; x < (moveSlotIndex ?? 0); x++) {
-            this.game.scene.ui.processInput(Button.DOWN); // Scrolling in summary pane to move position
-          }
-          this.game.scene.ui.processInput(Button.ACTION);
-          if (moveSlotIndex === 4) {
-            this.game.onNextPrompt("LearnMovePhase", UiMode.CONFIRM, () => {
-              this.game.scene.ui.processInput(Button.ACTION); // "Give up on learning XXX?"
-            });
-          }
-        });
-      }
-
-      await this.game.phaseInterceptor.to(LearnMovePhase).catch(e => reject(e));
-      resolve();
+    vi.spyOn(enemy, "getNextMove").mockReturnValueOnce({
+      move: moveId,
+      targets:
+        target !== undefined && !legalTargets.multiple && legalTargets.targets.includes(target)
+          ? [target]
+          : enemy.getNextTargets(moveId),
     });
+
+    /**
+     * Run the EnemyCommandPhase to completion.
+     * This allows this function to be called consecutively to
+     * force a move for each enemy in a double battle.
+     */
+    await this.game.phaseInterceptor.to("EnemyCommandPhase");
+  }
+
+  /**
+   * Forces the next enemy selecting a move to use the given move against the given target (if applicable).
+   *
+   * Warning: Overwrites the pokemon's moveset and disables the moveset override!
+   *
+   * Note: If you need to check for changes in the enemy's moveset as part of the test, it may be
+   * best to use {@linkcode changeMoveset} and {@linkcode selectEnemyMove} instead.
+   * @param moveId The {@linkcode MoveId | move} the enemy will use
+   * @param target (Optional) the {@linkcode BattlerIndex | target} which the enemy will use the given move against
+   */
+  public async forceEnemyMove(moveId: Moves, target?: BattlerIndex) {
+    // Wait for the next EnemyCommandPhase to start
+    await this.game.phaseInterceptor.to("EnemyCommandPhase", false);
+
+    const enemy =
+      this.game.scene.getEnemyField()[(this.game.scene.getCurrentPhase() as EnemyCommandPhase).getFieldIndex()];
+
+    if ([Overrides.OPP_MOVESET_OVERRIDE].flat().length > 0) {
+      vi.spyOn(Overrides, "OPP_MOVESET_OVERRIDE", "get").mockReturnValue([]);
+      console.warn(
+        "Warning: `forceEnemyMove` overwrites the Pokemon's moveset and disables the enemy moveset override!",
+      );
+    }
+    enemy.moveset = [new PokemonMove(moveId)];
+    const legalTargets = getMoveTargets(enemy, moveId);
+
+    vi.spyOn(enemy, "getNextMove").mockReturnValueOnce({
+      move: moveId,
+      targets:
+        target !== undefined && !legalTargets.multiple && legalTargets.targets.includes(target)
+          ? [target]
+          : enemy.getNextTargets(moveId),
+    });
+
+    /**
+     * Run the EnemyCommandPhase to completion.
+     * This allows this function to be called consecutively to
+     * force a move for each enemy in a double battle.
+     */
+    await this.game.phaseInterceptor.to("EnemyCommandPhase");
   }
 }

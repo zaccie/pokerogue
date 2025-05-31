@@ -6,7 +6,7 @@ import Phaser from "phaser";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { BattlerIndex } from "#app/battle";
 import { allAbilities } from "#app/data/data-lists";
-import { allMoves } from "#app/data/moves/move";
+import { allMoves } from "#app/data/data-lists";
 import { MoveCategory } from "#enums/MoveCategory";
 
 describe("Moves - Friend Guard", () => {
@@ -43,28 +43,35 @@ describe("Moves - Friend Guard", () => {
 
     game.move.select(Moves.SPLASH);
     game.move.select(Moves.SPLASH, 1);
-    await game.forceEnemyMove(Moves.TACKLE, BattlerIndex.PLAYER);
-    await game.forceEnemyMove(Moves.SPLASH);
+    await game.move.selectEnemyMove(Moves.TACKLE, BattlerIndex.PLAYER);
+    await game.move.selectEnemyMove(Moves.SPLASH);
     await game.toNextTurn();
 
     // Get the last return value from `getAttackDamage`
     const turn1Damage = spy.mock.results[spy.mock.results.length - 1].value.damage;
     // Making sure the test is controlled; turn 1 damage is equal to base damage (after rounding)
-    expect(turn1Damage).toBe(Math.floor(player1.getBaseDamage(enemy1, allMoves[Moves.TACKLE], MoveCategory.PHYSICAL)));
+    expect(turn1Damage).toBe(
+      Math.floor(
+        player1.getBaseDamage({ source: enemy1, move: allMoves[Moves.TACKLE], moveCategory: MoveCategory.PHYSICAL }),
+      ),
+    );
 
     vi.spyOn(player2, "getAbility").mockReturnValue(allAbilities[Abilities.FRIEND_GUARD]);
 
     game.move.select(Moves.SPLASH);
     game.move.select(Moves.SPLASH, 1);
-    await game.forceEnemyMove(Moves.TACKLE, BattlerIndex.PLAYER);
-    await game.forceEnemyMove(Moves.SPLASH);
+    await game.move.selectEnemyMove(Moves.TACKLE, BattlerIndex.PLAYER);
+    await game.move.selectEnemyMove(Moves.SPLASH);
     await game.toNextTurn();
 
     // Get the last return value from `getAttackDamage`
     const turn2Damage = spy.mock.results[spy.mock.results.length - 1].value.damage;
     // With the ally's Friend Guard, damage should have been reduced from base damage by 25%
     expect(turn2Damage).toBe(
-      Math.floor(player1.getBaseDamage(enemy1, allMoves[Moves.TACKLE], MoveCategory.PHYSICAL) * 0.75),
+      Math.floor(
+        player1.getBaseDamage({ source: enemy1, move: allMoves[Moves.TACKLE], moveCategory: MoveCategory.PHYSICAL }) *
+          0.75,
+      ),
     );
   });
 
@@ -76,8 +83,8 @@ describe("Moves - Friend Guard", () => {
 
     game.move.select(Moves.SPLASH);
     game.move.select(Moves.SPLASH, 1);
-    await game.forceEnemyMove(Moves.TACKLE, BattlerIndex.PLAYER_2);
-    await game.forceEnemyMove(Moves.SPLASH);
+    await game.move.selectEnemyMove(Moves.TACKLE, BattlerIndex.PLAYER_2);
+    await game.move.selectEnemyMove(Moves.SPLASH);
     await game.toNextTurn();
 
     const turn1Damage = spy.mock.results[spy.mock.results.length - 1].value.damage;
@@ -86,8 +93,8 @@ describe("Moves - Friend Guard", () => {
 
     game.move.select(Moves.SPLASH);
     game.move.select(Moves.SPLASH, 1);
-    await game.forceEnemyMove(Moves.TACKLE, BattlerIndex.PLAYER_2);
-    await game.forceEnemyMove(Moves.SPLASH);
+    await game.move.selectEnemyMove(Moves.TACKLE, BattlerIndex.PLAYER_2);
+    await game.move.selectEnemyMove(Moves.SPLASH);
     await game.toNextTurn();
 
     const turn2Damage = spy.mock.results[spy.mock.results.length - 1].value.damage;
@@ -102,8 +109,8 @@ describe("Moves - Friend Guard", () => {
 
     game.move.select(Moves.SPLASH);
     game.move.select(Moves.SPLASH, 1);
-    await game.forceEnemyMove(Moves.DRAGON_RAGE, BattlerIndex.PLAYER);
-    await game.forceEnemyMove(Moves.SPLASH);
+    await game.move.selectEnemyMove(Moves.DRAGON_RAGE, BattlerIndex.PLAYER);
+    await game.move.selectEnemyMove(Moves.SPLASH);
     await game.toNextTurn();
 
     const turn1Damage = spy.mock.results[spy.mock.results.length - 1].value.damage;
@@ -113,8 +120,8 @@ describe("Moves - Friend Guard", () => {
 
     game.move.select(Moves.SPLASH);
     game.move.select(Moves.SPLASH, 1);
-    await game.forceEnemyMove(Moves.DRAGON_RAGE, BattlerIndex.PLAYER);
-    await game.forceEnemyMove(Moves.SPLASH);
+    await game.move.selectEnemyMove(Moves.DRAGON_RAGE, BattlerIndex.PLAYER);
+    await game.move.selectEnemyMove(Moves.SPLASH);
     await game.toNextTurn();
 
     const turn2Damage = spy.mock.results[spy.mock.results.length - 1].value.damage;

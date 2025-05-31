@@ -41,7 +41,7 @@ describe("Abilities - Quick Draw", () => {
   });
 
   test("makes pokemon going first in its priority bracket", async () => {
-    await game.startBattle();
+    await game.classicMode.startBattle();
 
     const pokemon = game.scene.getPlayerPokemon()!;
     const enemy = game.scene.getEnemyPokemon()!;
@@ -54,7 +54,7 @@ describe("Abilities - Quick Draw", () => {
 
     expect(pokemon.isFainted()).toBe(false);
     expect(enemy.isFainted()).toBe(true);
-    expect(pokemon.battleData.abilitiesApplied).contain(Abilities.QUICK_DRAW);
+    expect(pokemon.waveData.abilitiesApplied).contain(Abilities.QUICK_DRAW);
   }, 20000);
 
   test(
@@ -63,7 +63,7 @@ describe("Abilities - Quick Draw", () => {
       retry: 5,
     },
     async () => {
-      await game.startBattle();
+      await game.classicMode.startBattle();
 
       const pokemon = game.scene.getPlayerPokemon()!;
       const enemy = game.scene.getEnemyPokemon()!;
@@ -76,14 +76,14 @@ describe("Abilities - Quick Draw", () => {
 
       expect(pokemon.isFainted()).toBe(true);
       expect(enemy.isFainted()).toBe(false);
-      expect(pokemon.battleData.abilitiesApplied).not.contain(Abilities.QUICK_DRAW);
+      expect(pokemon.waveData.abilitiesApplied).not.contain(Abilities.QUICK_DRAW);
     },
   );
 
   test("does not increase priority", async () => {
     game.override.enemyMoveset([Moves.EXTREME_SPEED]);
 
-    await game.startBattle();
+    await game.classicMode.startBattle();
 
     const pokemon = game.scene.getPlayerPokemon()!;
     const enemy = game.scene.getEnemyPokemon()!;
@@ -96,6 +96,6 @@ describe("Abilities - Quick Draw", () => {
 
     expect(pokemon.isFainted()).toBe(true);
     expect(enemy.isFainted()).toBe(false);
-    expect(pokemon.battleData.abilitiesApplied).contain(Abilities.QUICK_DRAW);
+    expect(pokemon.waveData.abilitiesApplied).contain(Abilities.QUICK_DRAW);
   }, 20000);
 });
