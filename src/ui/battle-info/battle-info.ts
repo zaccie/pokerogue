@@ -665,7 +665,7 @@ export default abstract class BattleInfo extends Phaser.GameObjects.Container {
     this.levelNumbersContainer.removeAll(true);
     const levelStr = level.toString();
     for (let i = 0; i < levelStr.length; i++) {
-      this.levelNumbersContainer.add(globalScene.add.image(i * 6, 0, textureKey, levelStr[i]).setScale(0.825));
+      this.levelNumbersContainer.add(globalScene.add.image(i * 6.5, 0, textureKey, levelStr[i]).setScale(0.825));
     }
     this.levelContainer.setX(this.baseLvContainerX - 8 * Math.max(levelStr.length - 3, 0));
   }

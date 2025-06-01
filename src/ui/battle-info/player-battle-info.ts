@@ -19,29 +19,29 @@ export class PlayerBattleInfo extends BattleInfo {
   }
 
   override constructTypeIcons(): void {
-    this.type1Icon = globalScene.add.sprite(-139, -17, "pbinfo_player_type1").setName("icon_type_1").setOrigin(0);
-    this.type2Icon = globalScene.add.sprite(-139, -1, "pbinfo_player_type2").setName("icon_type_2").setOrigin(0);
-    this.type3Icon = globalScene.add.sprite(-154, -17, "pbinfo_player_type3").setName("icon_type_3").setOrigin(0);
+    this.type1Icon = globalScene.add.sprite(-139, -16, "pbinfo_player_type1").setName("icon_type_1").setOrigin(0);
+    this.type2Icon = globalScene.add.sprite(-139, 0, "pbinfo_player_type2").setName("icon_type_2").setOrigin(0);
+    this.type3Icon = globalScene.add.sprite(-154, -16, "pbinfo_player_type3").setName("icon_type_3").setOrigin(0);
     this.add([this.type1Icon, this.type2Icon, this.type3Icon]);
   }
 
   constructor() {
     const posParams: BattleInfoParamList = {
-      nameTextX: -115,
-      nameTextY: -15.2,
+      nameTextX: -116,
+      nameTextY: -12.6,
       levelContainerX: -41,
-      levelContainerY: -10,
-      hpBarX: -61,
-      hpBarY: -1,
+      levelContainerY: -6,
+      hpBarX: -64,
+      hpBarY: 1,
       statBox: {
         xOffset: 8,
         paddingX: 4,
         statOverflow: 1,
       },
     };
-    super(Math.floor(globalScene.game.canvas.width / 6) - 1, -67, true, posParams);
+    super(Math.floor(globalScene.game.canvas.width / 6) - -6, -68, true, posParams);
 
-    this.hpNumbersContainer = globalScene.add.container(-15, 10).setName("container_hp");
+    this.hpNumbersContainer = globalScene.add.container(-15, 9.5).setName("container_hp");
 
     // hp number container must be beneath the stat container for overlay to display properly
     this.addAt(this.hpNumbersContainer, this.getIndex(this.statsContainer));
@@ -222,11 +222,11 @@ export class PlayerBattleInfo extends BattleInfo {
     const maxHpStr = maxHp.toString();
     let offset = 0;
     for (let i = maxHpStr.length - 1; i >= 0; i--) {
-      this.hpNumbersContainer.add(globalScene.add.image(offset++ * -6, 0, "numbers", maxHpStr[i]).setScale(0.83));
+      this.hpNumbersContainer.add(globalScene.add.image(offset++ * -6.6, 1, "numbers", maxHpStr[i]).setScale(0.83));
     }
-    this.hpNumbersContainer.add(globalScene.add.image(offset++ * -6, 0, "numbers", "/").setScale(0.83));
+    this.hpNumbersContainer.add(globalScene.add.image(offset++ * -6.6, 1, "numbers", "/").setScale(0.83));
     for (let i = hpStr.length - 1; i >= 0; i--) {
-      this.hpNumbersContainer.add(globalScene.add.image(offset++ * -6, 0, "numbers", hpStr[i]).setScale(0.83));
+      this.hpNumbersContainer.add(globalScene.add.image(offset++ * -6.6, 1, "numbers", hpStr[i]).setScale(0.83));
     }
   }
 

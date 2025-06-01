@@ -33,20 +33,20 @@ export class EnemyBattleInfo extends BattleInfo {
   }
 
   override constructTypeIcons(): void {
-    this.type1Icon = globalScene.add.sprite(-15, -15.5, "pbinfo_enemy_type1").setName("icon_type_1").setOrigin(0);
-    this.type2Icon = globalScene.add.sprite(-15, -2.5, "pbinfo_enemy_type2").setName("icon_type_2").setOrigin(0);
+    this.type1Icon = globalScene.add.sprite(-17, -15.5, "pbinfo_enemy_type1").setName("icon_type_1").setOrigin(0);
+    this.type2Icon = globalScene.add.sprite(-17, -2.5, "pbinfo_enemy_type2").setName("icon_type_2").setOrigin(0);
     this.type3Icon = globalScene.add.sprite(0, 15.5, "pbinfo_enemy_type3").setName("icon_type_3").setOrigin(0);
     this.add([this.type1Icon, this.type2Icon, this.type3Icon]);
   }
 
   constructor() {
     const posParams: BattleInfoParamList = {
-      nameTextX: -124,
-      nameTextY: -11.2,
+      nameTextX: -122,
+      nameTextY: -11.6,
       levelContainerX: -50,
       levelContainerY: -5,
       hpBarX: -71,
-      hpBarY: 4.5,
+      hpBarY: 5.5,
       statBox: {
         xOffset: 5,
         paddingX: 2,
@@ -54,7 +54,7 @@ export class EnemyBattleInfo extends BattleInfo {
       },
     };
 
-    super(140, -141, false, posParams);
+    super(130, -141, false, posParams);
 
     this.ownedIcon = globalScene.add
       .sprite(0, 0, "icon_owned")
